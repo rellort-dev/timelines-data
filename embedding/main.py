@@ -90,7 +90,6 @@ async def process(request: Request, articles: RawArticles):
 
     df = process_text_columns_for_displaying(df, input_columns=['title', 'description'])
     df = df.drop(columns=['text', 'content'])
-    print(df.to_dict(orient='records')[0])
     return {
         "articles": df.to_dict(orient='records')
     }
