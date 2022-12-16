@@ -18,6 +18,9 @@ def remove_problematic_articles(df, columns_to_check: list[str]):
         df = df.drop_duplicates(subset=[column])
         df = df.dropna(subset=[column])
     
+    if "title" not in columns_to_check:
+        return df
+    
     # Remove articles that do not encapsulate one and only one event
     # (e.g. The Guardian's daily 'what we know on day x of the ukraine war' article series)
     mask = df.title.str.startswith(config.ARTICLES_TO_REMOVE)
