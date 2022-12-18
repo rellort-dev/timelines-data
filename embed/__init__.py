@@ -1,11 +1,9 @@
 
-from fastapi import FastAPI, Request
 import copy
 import spacy
 import pandas as pd
-from config import config
-
-from models import ProcessedArticles, RawArticles
+from embed.config import config
+from embed.models import ProcessedArticles, RawArticles
 
 nlp = spacy.load('en_core_web_lg', 
                  exclude=['ner', 'tok2vec', 'tagger', 'parser', 'senter', 
@@ -15,13 +13,17 @@ def remove_problematic_articles(df, columns_to_check: list[str]):
     df = copy.deepcopy(df)
     
     for column in columns_to_check:
+        if column not in df:
+            raise Exception(f"Column to check '{column}' does not exist in the DataFrame.")
+    
+    for column in columns_to_check:
         df = df.drop_duplicates(subset=[column])
         df = df.dropna(subset=[column])
     
     if "title" not in columns_to_check:
         return df
     
-    # Remove articles that do not encapsulate one and only one event
+    # Remove s that do not encapsulate one and only one event
     # (e.g. The Guardian's daily 'what we know on day x of the ukraine war' article series)
     mask = df.title.str.startswith(config.ARTICLES_TO_REMOVE)
     df = df[~mask] 
@@ -77,11 +79,8 @@ def embed_column(df, input_column: str,  output_column: str):
     df[output_column] = embeddings
     return df
 
-app = FastAPI()
-
-@app.post("/process", response_model=ProcessedArticles)
-async def process(request: Request, articles: RawArticles):
-    df = pd.DataFrame.from_records(articles.dict()['articles'])
+def embed(articles: list[RawArticles]):
+    df = pd.DataFrame.from_records(articles)
     df = remove_problematic_articles(df, columns_to_check=['title', 'description', 'content'])
     
     df['text'] = df.title + ' ' + df.description + ' ' + df.content
@@ -89,8 +88,6 @@ async def process(request: Request, articles: RawArticles):
     df = embed_column(df, input_column='text', output_column='embeddings')
 
     df = process_text_columns_for_displaying(df, input_columns=['title', 'description'])
-    df = df.drop(columns=['text', 'content'])
-    return {
-        "articles": df.to_dict(orient='records')
-    }
+    df = df.drop(columns=['text'])
+    return df.to_dict(orient='records')
 
