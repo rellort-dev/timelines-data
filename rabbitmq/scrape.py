@@ -48,7 +48,7 @@ def main(source):
 
     client = Client(config.MEILISEARCH_URL, config.MEILISEARCH_KEY)
 
-    links = get_links_of_new_articles(source, client, 5)
+    links = get_links_of_new_articles(source, client, config.NUM_ARTICLES_PER_SCRAPE)
     articles = scrape_articles(source, links)
 
     print(f"Sending {len(articles)} articles...")
