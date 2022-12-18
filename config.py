@@ -1,5 +1,8 @@
 
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 SCRAPER_URL = os.environ["SCRAPER_URL"]
 NUM_ARTICLES_PER_SCRAPE = int(os.environ.get("NUM_ARTICLES_PER_SCRAPE", 50))
