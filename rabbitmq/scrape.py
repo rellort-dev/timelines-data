@@ -28,7 +28,7 @@ def get_links_of_new_articles(source, client, limit=50):
         offset += OFFSET_INCREMENT
     
     if failed_offsets:
-        print(f"Some requests to the link scraper failed: {', '.join(failed_offsets)}")
+        print(f"Some requests to the link scraper failed. Failed offsets: {', '.join(failed_offsets)}")
    
     for link in links:
         if is_duplicate(link, client) or limit <= len(result):
