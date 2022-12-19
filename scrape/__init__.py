@@ -10,13 +10,9 @@ def get_sources() -> list[str]:
     return json.loads(requests.get(config.SCRAPER_URL + "/sources").content)
 
 def is_duplicate(url: str, client: Client) -> bool:
-    try:
-        result = client.index("articles").search("", {
-            "filter": [f"url = '{url}'"]
-        })
-    except MeiliSearchCommunicationError:
-        raise Exception("Check your connection with the MeiliSearch instance")
-
+    result = client.index("articles").search("", {
+        "filter": [f"url = '{url}'"]
+    })
     return result['estimatedTotalHits'] > 0
 
 def scrape_links(source: str, offset: int) -> list[str]:

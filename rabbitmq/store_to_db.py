@@ -7,11 +7,8 @@ from meilisearch.errors import MeiliSearchCommunicationError
 
 def callback(ch, method, properties, body):
     print("Storing articles...")
-    try:
-        client = Client(config.MEILISEARCH_URL, config.MEILISEARCH_KEY)
-        client.index("articles").add_documents(body)
-    except MeiliSearchCommunicationError:
-        raise Exception("Check your connection with the MeiliSearch instance")
+    client = Client(config.MEILISEARCH_URL, config.MEILISEARCH_KEY)
+    client.index("articles").add_documents(body)
     print("Articles stored")
 
 def main():
