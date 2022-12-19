@@ -1,9 +1,9 @@
 # data.readtimelines.com
 
 # Usage
-`embed.py` and `store_to_db.py` are consumers written as persistent scripts, i.e. they keey running in the background, waiting to receive new articles. 
+`embed.py` and `store_to_db.py` are consumers written as persistent scripts, i.e. they keep running in the background, waiting to receive new articles. 
 
-`scrape.py` is a normal python script. You can run it manually to scrape 50 articles (this amount is configurable) from a source. However, it is usually run periodically using a CRON job. 
+`scrape.py` is a producer written as a normal python script. You can run it manually to scrape 50 articles (this amount is configurable) from a source. However, it is usually run periodically using a CRON job. 
 
 To test the data pipeline, 
 1. Provide the `SCRAPER_URL` as an environment variable.
