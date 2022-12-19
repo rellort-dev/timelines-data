@@ -30,13 +30,13 @@ def remove_problematic_articles(df, columns_to_check: list[str]):
         
     return df
 
-def process_text_columns_for_displaying(df, input_columns: list[str]):
+def process_text_columns_for_displaying(df, columns: list[str]):
     return df
 
-def process_text_columns_for_nlp(df, input_columns: list[str]):
+def process_text_columns_for_nlp(df, columns: list[str]):
     df = copy.deepcopy(df)
 
-    for column in input_columns:
+    for column in columns:
         # Convert words into lower case
         df[column] = df[column].str.lower()
         
@@ -69,13 +69,13 @@ def process_text_columns_for_nlp(df, input_columns: list[str]):
     
     return df
 
-def embed_column(df, input_column: str,  output_column: str):
+def embed_column(df, column: str):
     df = copy.deepcopy(df)
-    docs = list(nlp.pipe(df[input_column]))
+    docs = list(nlp.pipe(df[column]))
     embeddings = [doc.vector for doc in docs]
     # Convert from np array to list, and from np float to python float
     # to comply with pydantic type checking.
     embeddings = [list(vector.astype(float)) for vector in embeddings]
-    df[output_column] = embeddings
+    df["embeddings"] = embeddings
     return df
 

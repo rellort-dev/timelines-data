@@ -22,10 +22,10 @@ def callback(ch, method, properties, body):
 
     df = remove_problematic_articles(df, columns_to_check=['title', 'description', 'content'])
     df["text"] = df.title + ' ' + df.description + ' ' + df.content
-    df = process_text_columns_for_nlp(df, input_columns=['text'])
-    df = process_text_columns_for_displaying(df, input_columns=['title', 'description'])
+    df = process_text_columns_for_nlp(df, columns=['text'])
+    df = process_text_columns_for_displaying(df, columns=['title', 'description'])
 
-    df = embed_column(df, input_column="text", output_column='embeddings')
+    df = embed_column(df, column="text")
     df = df.drop(columns=["text"])
     df["uuid"] = [str(uuid.uuid4()) for _ in range(len(df.index))]  
     # iterating over a range is more efficient than a NumPy array
