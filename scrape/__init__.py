@@ -20,13 +20,10 @@ def is_duplicate(url: str, client: Client) -> bool:
     return result['estimatedTotalHits'] > 0
 
 def scrape_links(source: str, offset: int) -> list[str]:
-    try:
-        response = requests.get(config.SCRAPER_URL + f"/links?source={source}&offset={offset}")
-        if response.status_code != 200:
-            raise Exception(f"Scraping links from {source} raised an exception")
-        return json.loads(response.content)
-    except Exception:
-        raise Exception(f"Scraping links from {source} raised an exception")
+    response = requests.get(config.SCRAPER_URL + f"/links?source={source}&offset={offset}")
+    if response.status_code != 200:
+        raise Exception(f"Scraping links from {source} returned status code {response.status_code}")
+    return json.loads(response.content)
 
 # TODO: Skip failed articles, and log + notify which articles failed
 def scrape_articles(source: str, links: list[str]) -> list[RawArticle]:
