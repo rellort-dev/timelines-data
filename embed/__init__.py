@@ -1,11 +1,13 @@
 
 import copy
+import functools
 import spacy
-import pandas as pd
 from embed.config import config
-from embed.models import ProcessedArticles, RawArticles
 
-nlp = spacy.load('en_core_web_lg', 
+# Prevents the model from being loaded from importing the module
+@functools.cache
+def get_nlp():
+    return spacy.load('en_core_web_lg', 
                  exclude=['ner', 'tok2vec', 'tagger', 'parser', 'senter', 
                           'textcat', 'attribute_ruler', 'lemmatizer'])
 
@@ -71,7 +73,7 @@ def process_text_columns_for_nlp(df, columns: list[str]):
 
 def embed_column(df, column: str):
     df = copy.deepcopy(df)
-    docs = list(nlp.pipe(df[column]))
+    docs = list(get_nlp().pipe(df[column]))
     embeddings = [doc.vector for doc in docs]
     # Convert from np array to list, and from np float to python float
     # to comply with pydantic type checking.
