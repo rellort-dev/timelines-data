@@ -15,13 +15,21 @@ def get_links_of_new_articles(source, client, limit=50):
     
     result = []
     offset = 0
-    links = scrape_links(source, offset)
+    failed_offsets = []
 
-    while (not is_duplicate(links[-1], client)) and len(result) <= limit - 10:
-        result += links
+    while len(result) <= limit:
+        try:
+            links = scrape_links(source, offset)
+            if is_duplicate(links[-1], client) or len(result) + 10 > limit:
+                break
+            result += links
+        except Exception:
+            failed_offsets.append(str(offset))
         offset += OFFSET_INCREMENT
-        links = scrape_links(source, offset)
     
+    if failed_offsets:
+        print(f"Some requests to the link scraper failed: {', '.join(failed_offsets)}")
+   
     for link in links:
         if is_duplicate(link, client) or limit <= len(result):
             break
@@ -33,7 +41,6 @@ def main(source):
     supported_sources = get_sources()
     if source not in supported_sources:
         raise Exception("Please provide a correct source as a system argument! Supported sources: " + ", ".join(supported_sources))
-    
     
     connection = pika.BlockingConnection(
         pika.ConnectionParameters(host="localhost")
@@ -52,12 +59,14 @@ def main(source):
     articles = scrape_articles(source, links)
 
     print(f"Sending {len(articles)} articles...")
-    channel.basic_publish(exchange=config.RABBITMQ_EXCHANGE_NAME, 
-                        routing_key=config.RABBITMQ_EMBEDDER_BINDING_KEY, 
-                        body=json.dumps(articles),
-                        properties=pika.BasicProperties(
-                            delivery_mode=pika.spec.PERSISTENT_DELIVERY_MODE
-                        ))
+    channel.basic_publish(
+        exchange=config.RABBITMQ_EXCHANGE_NAME, 
+        routing_key=config.RABBITMQ_EMBEDDER_BINDING_KEY, 
+        body=json.dumps(articles),
+        properties=pika.BasicProperties(
+            delivery_mode=pika.spec.PERSISTENT_DELIVERY_MODE
+        )
+    )
     print("Articles sent")
 
     connection.close()
