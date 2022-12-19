@@ -1,20 +1,37 @@
 
 import config
 import json
+import pandas as pd
 import pika
+import sentry_sdk
 import uuid
-from embed import embed 
+from embed import remove_problematic_articles, process_text_columns_for_displaying, process_text_columns_for_nlp, embed_column
 
 
 def callback(ch, method, properties, body):
     articles = json.loads(body)
-
     print(f"Embedding {len(articles)} articles...")
-    embedded_articles = embed(articles)
 
-    for i in range(len(embedded_articles)):
-        embedded_articles[i]["uuid"] = str(uuid.uuid4())
-    
+    if len(articles) == 0:
+        print("Done embedding articles")
+        return 
+
+    df = pd.DataFrame.from_records(articles)
+    if "error" in df:  # due to from_records
+        df = df.drop(columns=["error", "stacktrace"])
+
+    df = remove_problematic_articles(df, columns_to_check=['title', 'description', 'content'])
+    df["text"] = df.title + ' ' + df.description + ' ' + df.content
+    df = process_text_columns_for_nlp(df, input_columns=['text'])
+    df = process_text_columns_for_displaying(df, input_columns=['title', 'description'])
+
+    df = embed_column(df, input_column="text", output_column='embeddings')
+    df = df.drop(columns=["text"])
+    df["uuid"] = [str(uuid.uuid4()) for _ in range(len(df.index))]  
+    # iterating over a range is more efficient than a NumPy array
+
+    embedded_articles = df.to_dict(orient='records')
+
     ch.basic_publish(
         exchange=config.RABBITMQ_EXCHANGE_NAME,
         routing_key=config.RABBITMQ_STORER_BINDING_KEY, 
@@ -23,10 +40,16 @@ def callback(ch, method, properties, body):
             delivery_mode=pika.spec.PERSISTENT_DELIVERY_MODE
         )
     )
+
     print("Done embedding articles")
     return 
 
 def main():
+    sentry_sdk.init(
+        dsn="https://72dcd0f50d5e40fda890cce86cd02b00@o4504354060369920.ingest.sentry.io/4504354063450114",
+        traces_sample_rate=1.0
+    )
+
     connection = pika.BlockingConnection(
         pika.ConnectionParameters(host=config.RABBITMQ_HOST)
     )

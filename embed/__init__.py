@@ -79,15 +79,3 @@ def embed_column(df, input_column: str,  output_column: str):
     df[output_column] = embeddings
     return df
 
-def embed(articles: list[RawArticles]):
-    df = pd.DataFrame.from_records(articles)
-    df = remove_problematic_articles(df, columns_to_check=['title', 'description', 'content'])
-    
-    df['text'] = df.title + ' ' + df.description + ' ' + df.content
-    df = process_text_columns_for_nlp(df, input_columns=['text'])
-    df = embed_column(df, input_column='text', output_column='embeddings')
-
-    df = process_text_columns_for_displaying(df, input_columns=['title', 'description'])
-    df = df.drop(columns=['text'])
-    return df.to_dict(orient='records')
-
