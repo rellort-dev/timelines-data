@@ -23,7 +23,9 @@ def get_links_of_new_articles(source, client, limit=50):
             if is_duplicate(links[-1], client) or len(result) + 10 > limit:
                 break
             result += links
-        except Exception:
+        except Exception as e:
+            print(f"Scraping links from source={source} and offset={offset} raised an exception:")
+            print(e)
             failed_offsets.append(str(offset))
         offset += OFFSET_INCREMENT
     
