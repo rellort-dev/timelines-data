@@ -2,7 +2,6 @@
 import config
 import pika
 from meilisearch import Client
-from meilisearch.errors import MeiliSearchCommunicationError
 
 
 def callback(ch, method, properties, body):
