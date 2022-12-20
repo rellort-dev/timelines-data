@@ -85,7 +85,8 @@ def main(source):
             article["source"] = source
             
             if article["publishedTime"] < latest_published_time:
-                print(f"Scraped a total of {offset} articles! (minus the failures)")
+                print(f"source={source}, attempted to scrape {offset} links, "
+                    + f"{offset - num_failures} successes {num_failures} failures")
                 return
             
             channel.basic_publish(
