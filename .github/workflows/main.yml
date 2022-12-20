@@ -17,8 +17,9 @@ jobs:
         username: ${{ secrets.SSH_USERNAME }}
         key: ${{ secrets.SSH_KEY }}
         script: |
+          export NVM_DIR=~/.nvm
+          source ~/.nvm/nvm.sh
           cd timelines-data 
-          git pull
-          whoami
+          git pull        
           /root/.nvm/versions/node/v18.12.1/bin/pm2 reload db-storer
           /root/.nvm/versions/node/v18.12.1/bin/pm2 reload embedder
