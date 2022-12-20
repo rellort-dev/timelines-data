@@ -1,0 +1,19 @@
+name: Data Pipeline Deployment
+
+on:
+  push:
+    branches: [ "main" ]
+    
+jobs:
+  deploy-to-server:
+    name: Deploy to DigitalOcean
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: SSH Deploy
+      uses: appleboy/ssh-action@v0.1.6
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USERNAME }}
+        key: ${{ secrets.SSH_KEY }}
+        script: cd timelines-data && git pull && pm2 reload db-storer && pm2 reload embedder
