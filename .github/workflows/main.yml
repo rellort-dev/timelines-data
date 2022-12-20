@@ -16,4 +16,9 @@ jobs:
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_USERNAME }}
         key: ${{ secrets.SSH_KEY }}
-        script: cd timelines-data && git pull && pm2 reload db-storer && pm2 reload embedder
+        script: |
+          cd timelines-data 
+          git pull
+          whoami
+          pm2 reload db-storer
+          pm2 reload embedder
