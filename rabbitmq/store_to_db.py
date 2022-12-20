@@ -1,14 +1,21 @@
 
-import config
+import json
 import pika
+import sentry_sdk
 from meilisearch import Client
 
+import config
+from scrape import is_duplicate
 
 def callback(ch, method, properties, body):
-    print("Storing articles...")
     client = Client(config.MEILISEARCH_URL, config.MEILISEARCH_KEY)
-    client.index("articles").add_documents(body)
-    print("Articles stored")
+
+    article = json.loads(body)
+    if is_duplicate(article, client):
+        return
+
+    client.index("articles").add_documents(article)
+    print(f"Article stored: {article['url']}")
 
 def main():
     connection = pika.BlockingConnection(
@@ -22,10 +29,10 @@ def main():
                        queue=config.RABBITMQ_STORER_QUEUE_NAME, 
                        routing_key=config.RABBITMQ_STORER_BINDING_KEY)
     
-    print("Ready to store articles")
     channel.basic_consume(
         queue=config.RABBITMQ_STORER_QUEUE_NAME, on_message_callback=callback, auto_ack=True
     )
+    print("Ready to store articles")
     channel.start_consuming()
 
 if __name__ == "__main__":

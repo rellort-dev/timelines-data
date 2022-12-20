@@ -1,14 +1,18 @@
 
 import json
-import config
 import pika
+import sentry_sdk
 import sys
+from dateutil import parser
 from meilisearch import Client 
-from scrape import get_sources, scrape_links, scrape_articles, is_duplicate
+
+import config
+from scrape import get_sources, scrape_article, scrape_links, is_duplicate, get_latest_published_time
 
 
 OFFSET_INCREMENT = 10
 
+# NOTE: limit must be in multiples of 10
 def get_links_of_new_articles(source, client, limit=50):
     if limit > 100:
         raise ValueError("Scraper is limited to a maximum of 100 links")
@@ -45,7 +49,7 @@ def main(source):
         raise Exception("Please provide a correct source as a system argument! Supported sources: " + ", ".join(supported_sources))
     
     connection = pika.BlockingConnection(
-        pika.ConnectionParameters(host="localhost")
+        pika.ConnectionParameters(host=config.RABBITMQ_HOST)
     )
     channel = connection.channel()
     channel.exchange_declare(exchange=config.RABBITMQ_EXCHANGE_NAME, exchange_type="direct")
@@ -53,23 +57,44 @@ def main(source):
     channel.queue_bind(exchange=config.RABBITMQ_EXCHANGE_NAME, 
                        queue=config.RABBITMQ_EMBEDDER_QUEUE_NAME, 
                        routing_key=config.RABBITMQ_EMBEDDER_BINDING_KEY)
-    # NOTE: Is it necessary to declare & bind the exchange and queue in both sending and receiving scripts?
 
     client = Client(config.MEILISEARCH_URL, config.MEILISEARCH_KEY)
+    latest_published_time = get_latest_published_time(source, client)
+    
+    offset = 0
+    num_failures = 0
+    while offset < config.NUM_ARTICLES_PER_SCRAPE:
+        links = scrape_links(source, offset)
+        for link in links:
+            try:
+                article = scrape_article(source, link)
+            except Exception as e:
+                print(f"Scraping {link} raised an exception: ")
+                print(e)
+                num_failures = 0
+                continue
 
-    links = get_links_of_new_articles(source, client, config.NUM_ARTICLES_PER_SCRAPE)
-    articles = scrape_articles(source, links)
-
-    print(f"Sending {len(articles)} articles...")
-    channel.basic_publish(
-        exchange=config.RABBITMQ_EXCHANGE_NAME, 
-        routing_key=config.RABBITMQ_EMBEDDER_BINDING_KEY, 
-        body=json.dumps(articles),
-        properties=pika.BasicProperties(
-            delivery_mode=pika.spec.PERSISTENT_DELIVERY_MODE
-        )
-    )
-    print("Articles sent")
+            iso_time = article["publishedTime"]
+            unix_timestamp = int(parser.parse(iso_time).timestamp())
+            article["publishedTime"] = unix_timestamp
+            article["source"] = source
+            
+            if article["publishedTime"] < latest_published_time:
+                print(f"Scraped a total of {offset} articles! (minus the failures)")
+                return
+            
+            channel.basic_publish(
+                exchange=config.RABBITMQ_EXCHANGE_NAME, 
+                routing_key=config.RABBITMQ_EMBEDDER_BINDING_KEY, 
+                body=json.dumps(article),
+                properties=pika.BasicProperties(
+                    delivery_mode=pika.spec.PERSISTENT_DELIVERY_MODE
+                )
+            )
+            print(f"Scraped {link}!")
+        offset += 10
+    print(f"source={source}, attempted to scrape {offset} links, "
+          + f"{offset - num_failures} successes {num_failures} failures")
 
     connection.close()
 

@@ -1,6 +1,6 @@
 
-import copy
 import functools
+import re
 import spacy
 from embed.config import config
 
@@ -11,73 +11,49 @@ def get_nlp():
                  exclude=['ner', 'tok2vec', 'tagger', 'parser', 'senter', 
                           'textcat', 'attribute_ruler', 'lemmatizer'])
 
-def remove_problematic_articles(df, columns_to_check: list[str]):
-    df = copy.deepcopy(df)
+def process_text_for_nlp(text: str) -> str:
+    # Convert words into lower case
+    text = text.lower()
     
-    for column in columns_to_check:
-        if column not in df:
-            raise Exception(f"Column to check '{column}' does not exist in the DataFrame.")
+    # Convert contractions into formal form
+    for contraction, formal_form in config.CONTRACTION_MAP.items():
+        text = text.replace(contraction, formal_form)
+
+    # Remove HTML tags
+    text = re.sub(r'<[^<>]*>', '', text)
     
-    for column in columns_to_check:
-        df = df.drop_duplicates(subset=[column])
-        df = df.dropna(subset=[column])
+    # Remove everything in parenthesis
+    text = re.sub(r'\([^\(\)]*\)', '', text)
+    text = re.sub(r'\[[^\[\]]*\]', '', text)
+
+    # Remove words or phrases that convey no meaning    
+    news_agencies = ['cnbc', 'the washington post', 'the associated press', 'reuters.com',
+                    'reuters', 'read more at straitstimes.com.', 'bbc news']
+    boilerplate_text = ['placeholder while article actions load', 'posted',  
+                        'image source',  'getty images', 'image caption',  'good morning and welcome to the climate 202']
+    for meaningless_string in (news_agencies + boilerplate_text):
+        text = text.replace(meaningless_string, '')
     
-    if "title" not in columns_to_check:
-        return df
+    # Remove non-alphanumeric characters
+    text = re.sub('[^a-zA-Z0-9]', ' ', text)
     
-    # Remove s that do not encapsulate one and only one event
-    # (e.g. The Guardian's daily 'what we know on day x of the ukraine war' article series)
-    mask = df.title.str.startswith(config.ARTICLES_TO_REMOVE)
-    df = df[~mask] 
-        
-    return df
-
-def process_text_columns_for_displaying(df, columns: list[str]):
-    return df
-
-def process_text_columns_for_nlp(df, columns: list[str]):
-    df = copy.deepcopy(df)
-
-    for column in columns:
-        # Convert words into lower case
-        df[column] = df[column].str.lower()
-        
-        # Convert contractions into formal form
-        df[column] = df[column].replace(config.CONTRACTION_MAP, regex=True)
-
-        # Remove HTML tags
-        df[column] = df[column].str.replace(r'<[^<>]*>', '', regex=True)
-        
-        # Remove everything in parenthesis
-        df[column] = df[column].str.replace(r'\([^\(\)]*\)', '', regex=True)
-        df[column] = df[column].str.replace(r'\[[^\[\]]*\]', '', regex=True)
-
-        # Remove words or phrases that convey no meaning    
-        news_agencies = ['cnbc', 'the washington post', 'the associated press', 'reuters.com',
-                        'reuters', 'read more at straitstimes.com.', 'bbc news']
-        boilerplate_text = ['placeholder while article actions load', 'posted',  
-                            'image source',  'getty images', 'image caption',  'good morning and welcome to the climate 202']
-        for meaningless_string in (news_agencies + boilerplate_text):
-            df[column] = df[column].str.replace(meaningless_string, '', regex=True)
-        
-        # Remove non-alphanumeric characters
-        df[column] = df[column].str.replace('[^a-zA-Z0-9]', ' ', regex=True)
-        
-        # Remove duplicate spaces
-        df[column] = df[column].str.replace(' +', ' ', regex=True)
-        
-        # Remove trailing and leading spaces 
-        df[column] = df[column].str.strip()
+    # Remove duplicate spaces
+    text = re.sub(' +', ' ', text)
     
-    return df
-
-def embed_column(df, column: str):
-    df = copy.deepcopy(df)
-    docs = list(get_nlp().pipe(df[column]))
-    embeddings = [doc.vector for doc in docs]
+    # Remove trailing and leading spaces 
+    text = text.strip()
+    
+    return text
+    
+def embed_text(text) -> list[float]:
+    doc = get_nlp()(text)
+    embeddings = doc.vector
     # Convert from np array to list, and from np float to python float
     # to comply with pydantic type checking.
-    embeddings = [list(vector.astype(float)) for vector in embeddings]
-    df["embeddings"] = embeddings
-    return df
+    embeddings = list(embeddings.astype(float))
+    return embeddings
 
+def is_problematic_article(article):
+    if "title" not in article:
+        return True
+    return article["title"].startswith(tuple(config.ARTICLES_TO_REMOVE))
