@@ -17,3 +17,5 @@ RABBITMQ_EMBEDDER_QUEUE_NAME = "articles_to_embed"
 RABBITMQ_EMBEDDER_BINDING_KEY = "embedder"
 RABBITMQ_STORER_QUEUE_NAME = "articles_to_store"
 RABBITMQ_STORER_BINDING_KEY = "storer"
+
+SENTRY_DSN = os.environ["SENTRY_DSN"]

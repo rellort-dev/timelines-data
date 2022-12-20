@@ -44,6 +44,11 @@ def get_links_of_new_articles(source, client, limit=50):
     return result
 
 def main(source):
+    sentry_sdk.init(
+        dsn=config.SENTRY_DSN,
+        traces_sample_rate=1.0
+    )
+    
     supported_sources = get_sources()
     if source not in supported_sources:
         raise Exception("Please provide a correct source as a system argument! Supported sources: " + ", ".join(supported_sources))

@@ -32,7 +32,7 @@ def callback(ch, method, properties, body):
     
 def main():
     sentry_sdk.init(
-        dsn="https://72dcd0f50d5e40fda890cce86cd02b00@o4504354060369920.ingest.sentry.io/4504354063450114",
+        dsn=config.SENTRY_DSN,
         traces_sample_rate=1.0
     )
 

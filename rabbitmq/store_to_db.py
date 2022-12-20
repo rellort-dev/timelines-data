@@ -18,6 +18,11 @@ def callback(ch, method, properties, body):
     print(f"Article stored: {article['url']}")
 
 def main():
+    sentry_sdk.init(
+        dsn=config.SENTRY_DSN,
+        traces_sample_rate=1.0
+    )
+
     connection = pika.BlockingConnection(
         pika.ConnectionParameters(host=config.RABBITMQ_HOST)
     )
