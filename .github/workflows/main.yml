@@ -21,5 +21,5 @@ jobs:
           source ~/.nvm/nvm.sh
           cd timelines-data 
           git pull        
-          pm2 reload db-storer
-          pm2 reload embedder
+          pm2 reload store_to_db
+          pm2 reload embed
