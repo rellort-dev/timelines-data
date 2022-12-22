@@ -38,5 +38,6 @@ def scrape_article(source: str, link: str):
     response = requests.get(config.SCRAPER_URL + f"/article?source={source}&url={link}")
     content = json.loads(response.content)
     if response.status_code != 200:
-        raise Exception(f"Scraping article from {link} returned status code {response.status_code}: {content}")
+        pretty_printed_exception = json.dumps(content, indent=4)
+        raise Exception(f"Scraping article from {link} returned status code {response.status_code}: \n{pretty_printed_exception}")
     return content
