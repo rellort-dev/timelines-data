@@ -12,13 +12,13 @@ def callback(ch, method, properties, body):
     client = Client(config.MEILISEARCH_URL, config.MEILISEARCH_KEY)
 
     article = json.loads(body)
+    logging_prefix = f"[store_to_db.py | {datetime.now()}]"
     if is_duplicate(article, client):
         print(f"{logging_prefix} Duplicate detected: {article['url']}")
         return
 
     client.index("articles").add_documents(article)
 
-    logging_prefix = f"[store_to_db.py | {datetime.now()}]"
     print(f"{logging_prefix} Article stored: {article['url']}")
     
 def main():
