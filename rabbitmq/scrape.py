@@ -56,7 +56,6 @@ def main(source):
     logging_prefix = f"[scrape.py {source}|{datetime.now()}]"
     while offset < config.NUM_ARTICLES_PER_SCRAPE:
         links = scrape_links(source, offset)
-        print(f"{len(links)} links from {offset}")
 
         for i, link in enumerate(links):
             try:
