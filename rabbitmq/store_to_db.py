@@ -13,6 +13,7 @@ def callback(ch, method, properties, body):
 
     article = json.loads(body)
     if is_duplicate(article, client):
+        print(f"{logging_prefix} Duplicate detected: {article['url']}")
         return
 
     client.index("articles").add_documents(article)
