@@ -1,4 +1,5 @@
 
+from datetime import datetime
 import json
 import pika
 import sentry_sdk
@@ -28,7 +29,9 @@ def callback(ch, method, properties, body):
             delivery_mode=pika.spec.PERSISTENT_DELIVERY_MODE
         )
     )
-    print(f"Article embedded: {article['url']}")
+
+    message_prefix = f"[embed.py | {datetime.now()}]"
+    print(f"{message_prefix} Article embedded: {article['url']}")
     
 def main():
     sentry_sdk.init(

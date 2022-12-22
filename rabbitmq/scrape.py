@@ -3,6 +3,7 @@ import json
 import pika
 import sentry_sdk
 import sys
+from datetime import datetime
 from dateutil import parser
 from meilisearch import Client 
 
@@ -10,38 +11,17 @@ import config
 from scrape import get_sources, scrape_article, scrape_links, is_duplicate, get_latest_published_time
 
 
-OFFSET_INCREMENT = 10
+def get_logging_prefix(source):
+    return f"[scrape.py {source}|{datetime.now()}]"
 
-# NOTE: limit must be in multiples of 10
-def get_links_of_new_articles(source, client, limit=50):
-    if limit > 100:
-        raise ValueError("Scraper is limited to a maximum of 100 links")
-    
-    result = []
-    offset = 0
-    failed_offsets = []
+def log_results(source, num_new_articles, num_failures):
+    logging_prefix = get_logging_prefix(source)
+    num_successes = num_new_articles - num_failures
 
-    while len(result) <= limit:
-        try:
-            links = scrape_links(source, offset)
-            if is_duplicate(links[-1], client) or len(result) + 10 > limit:
-                break
-            result += links
-        except Exception as e:
-            print(f"Scraping links from source={source} and offset={offset} raised an exception:")
-            print(e)
-            failed_offsets.append(str(offset))
-        offset += OFFSET_INCREMENT
-    
-    if failed_offsets:
-        print(f"Some requests to the link scraper failed. Failed offsets: {', '.join(failed_offsets)}")
-   
-    for link in links:
-        if is_duplicate(link, client) or limit <= len(result):
-            break
-        result.append(link)
-
-    return result
+    print(
+        f"{logging_prefix} {num_new_articles} new articles, "
+        + f"{num_successes} successes, {num_failures} failures"
+    )
 
 def main(source):
     sentry_sdk.init(
@@ -51,7 +31,12 @@ def main(source):
     
     supported_sources = get_sources()
     if source not in supported_sources:
-        raise Exception("Please provide a correct source as a system argument! Supported sources: " + ", ".join(supported_sources))
+        logging_prefix = get_logging_prefix(source)
+        supported_sources_str = ", ".join(supported_sources)
+        raise Exception(
+            f"{logging_prefix} An incorrect source was provided. "
+            + f"Supported sources: {supported_sources_str}"
+        )
     
     connection = pika.BlockingConnection(
         pika.ConnectionParameters(host=config.RABBITMQ_HOST)
@@ -68,15 +53,17 @@ def main(source):
     
     offset = 0
     num_failures = 0
+    logging_prefix = f"[scrape.py {source}|{datetime.now()}]"
     while offset < config.NUM_ARTICLES_PER_SCRAPE:
         links = scrape_links(source, offset)
-        for link in links:
+        print(f"{len(links)} links from {offset}")
+
+        for i, link in enumerate(links):
             try:
                 article = scrape_article(source, link)
             except Exception as e:
-                print(f"Scraping {link} raised an exception: ")
-                print(e)
-                num_failures = 0
+                print(logging_prefix + " " + str(e))
+                num_failures += 1
                 continue
 
             iso_time = article["publishedTime"]
@@ -85,8 +72,8 @@ def main(source):
             article["source"] = source
             
             if article["publishedTime"] < latest_published_time:
-                print(f"source={source}, attempted to scrape {offset} links, "
-                    + f"{offset - num_failures} successes {num_failures} failures")
+                num_new_articles = offset + i
+                log_results(source, num_new_articles, num_failures)
                 return
             
             channel.basic_publish(
@@ -97,11 +84,10 @@ def main(source):
                     delivery_mode=pika.spec.PERSISTENT_DELIVERY_MODE
                 )
             )
-            print(f"Scraped {link}!")
-        offset += 10
-    print(f"source={source}, attempted to scrape {offset} links, "
-          + f"{offset - num_failures} successes {num_failures} failures")
+        offset += len(links)
 
+    num_new_articles = offset
+    log_results(source, num_new_articles, num_failures)
     connection.close()
 
 if __name__ == "__main__":

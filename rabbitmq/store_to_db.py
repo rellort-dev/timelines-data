@@ -1,4 +1,5 @@
 
+from datetime import datetime
 import json
 import pika
 import sentry_sdk
@@ -15,8 +16,10 @@ def callback(ch, method, properties, body):
         return
 
     client.index("articles").add_documents(article)
-    print(f"Article stored: {article['url']}")
 
+    logging_prefix = f"[store_to_db.py | {datetime.now()}]"
+    print(f"{logging_prefix} Article stored: {article['url']}")
+    
 def main():
     sentry_sdk.init(
         dsn=config.SENTRY_DSN,
