@@ -1,5 +1,4 @@
 
-from datetime import datetime
 import json
 import pika
 import sentry_sdk
@@ -12,7 +11,7 @@ def callback(ch, method, properties, body):
     client = Client(config.MEILISEARCH_URL, config.MEILISEARCH_KEY)
 
     article = json.loads(body)
-    logging_prefix = f"[store_to_db.py | {datetime.now()}]"
+    logging_prefix = config.get_logging_prefix("store_to_db", None)
     if is_duplicate(article, client):
         print(f"{logging_prefix} Duplicate detected: {article['url']}")
         return

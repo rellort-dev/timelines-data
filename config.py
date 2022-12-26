@@ -1,5 +1,6 @@
 
 import os
+from datetime import datetime
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -19,3 +20,15 @@ RABBITMQ_STORER_QUEUE_NAME = "articles_to_store"
 RABBITMQ_STORER_BINDING_KEY = "storer"
 
 SENTRY_DSN = os.environ["SENTRY_DSN"]
+
+def get_logging_prefix(type: str, source: str):
+    if type == "scrape":
+        if not source:
+            raise Exception("Logging prefix for scrape.py must include a source.")
+        return f"[scrape.py {source} | {datetime.now()}]"
+    elif type == "embed":
+        return f"[embed.py | {datetime.now()}]"
+    elif type == "store_to_db":
+        return f"[store_to_db.py | {datetime.now()}]"
+    else:
+        raise Exception("Valid types: scrape, embed, store_to_db")

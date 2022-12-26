@@ -11,11 +11,8 @@ import config
 from scrape import get_sources, scrape_article, scrape_links, is_duplicate, get_latest_published_time
 
 
-def get_logging_prefix(source):
-    return f"[scrape.py {source} | {datetime.now()}]"
-
 def log_results(source, num_new_articles, num_failures):
-    logging_prefix = get_logging_prefix(source)
+    logging_prefix = config.get_logging_prefix("scrape", source)
     num_successes = num_new_articles - num_failures
 
     print(
