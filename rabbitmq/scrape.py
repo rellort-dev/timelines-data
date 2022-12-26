@@ -28,7 +28,7 @@ def main(source):
     
     supported_sources = get_sources()
     if source not in supported_sources:
-        logging_prefix = get_logging_prefix(source)
+        logging_prefix = config.get_logging_prefix("scrape", source)
         supported_sources_str = ", ".join(supported_sources)
         raise Exception(
             f"{logging_prefix} An incorrect source was provided. "
