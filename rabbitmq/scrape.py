@@ -55,7 +55,7 @@ def main(source):
     links = scrape_links(source)
     for link in links:
         try:
-            article = scrape_article(source, link)
+            article = scrape_article(link)
         except Exception as e:
             print(logging_prefix + " " + str(e))
             num_failures += 1
