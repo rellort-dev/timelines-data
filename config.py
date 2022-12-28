@@ -9,7 +9,6 @@ SCRAPER_URL = os.environ["SCRAPER_URL"]
 SCRAPER_SOURCES_URL = SCRAPER_URL + "/sources"
 SCRAPER_LINKS_URL = SCRAPER_URL + "/links"
 SCRAPER_ARTICLE_URL = SCRAPER_URL + "/article"
-NUM_ARTICLES_PER_SCRAPE = int(os.environ.get("NUM_ARTICLES_PER_SCRAPE", 50))
 
 MEILISEARCH_URL = os.environ.get("MEILISEARCH_URL", "http://localhost:7700")
 MEILISEARCH_KEY = os.environ.get("MEILISEARCH_KEY", "masterKey")

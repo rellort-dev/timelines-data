@@ -5,10 +5,9 @@ import sentry_sdk
 import sys
 from datetime import datetime
 from dateutil import parser
-from meilisearch import Client 
 
 import config
-from scrape import get_sources, scrape_article, scrape_links, is_duplicate, get_latest_published_time
+from scrape import get_sources, scrape_article, scrape_links
 
 
 def log_results(source: str, num_new_articles: int, num_failures: int):
@@ -50,44 +49,33 @@ def main(source):
                        queue=config.RABBITMQ_EMBEDDER_QUEUE_NAME, 
                        routing_key=config.RABBITMQ_EMBEDDER_BINDING_KEY)
 
-    client = Client(config.MEILISEARCH_URL, config.MEILISEARCH_KEY)
-    latest_published_time = get_latest_published_time(source, client)
-    
-    offset = 0
     num_failures = 0
     logging_prefix = f"[scrape.py {source}|{datetime.now()}]"
-    while offset < config.NUM_ARTICLES_PER_SCRAPE:
-        links = scrape_links(source, offset)
 
-        for i, link in enumerate(links):
-            try:
-                article = scrape_article(source, link)
-            except Exception as e:
-                print(logging_prefix + " " + str(e))
-                num_failures += 1
-                continue
+    links = scrape_links(source)
+    for link in links:
+        try:
+            article = scrape_article(source, link)
+        except Exception as e:
+            print(logging_prefix + " " + str(e))
+            num_failures += 1
+            continue
 
-            iso_time = article["publishedTime"]
-            unix_timestamp = int(parser.parse(iso_time).timestamp())
-            article["publishedTime"] = unix_timestamp
-            article["source"] = source
-            
-            if article["publishedTime"] < latest_published_time:
-                num_new_articles = offset + i
-                log_results(source, num_new_articles, num_failures)
-                return
-            
-            channel.basic_publish(
-                exchange=config.RABBITMQ_EXCHANGE_NAME, 
-                routing_key=config.RABBITMQ_EMBEDDER_BINDING_KEY, 
-                body=json.dumps(article),
-                properties=pika.BasicProperties(
-                    delivery_mode=pika.spec.PERSISTENT_DELIVERY_MODE
-                )
+        iso_time = article["publishedTime"]
+        unix_timestamp = int(parser.parse(iso_time).timestamp())
+        article["publishedTime"] = unix_timestamp
+        article["source"] = source
+        
+        channel.basic_publish(
+            exchange=config.RABBITMQ_EXCHANGE_NAME, 
+            routing_key=config.RABBITMQ_EMBEDDER_BINDING_KEY, 
+            body=json.dumps(article),
+            properties=pika.BasicProperties(
+                delivery_mode=pika.spec.PERSISTENT_DELIVERY_MODE
             )
-        offset += len(links)
+        )
 
-    num_new_articles = offset
+    num_new_articles = len(links)
     log_results(source, num_new_articles, num_failures)
     connection.close()
 
