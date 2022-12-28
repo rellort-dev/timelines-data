@@ -33,10 +33,10 @@ def scrape_links(source: str, offset: int) -> list[str]:
     response.raise_for_status()
     return json.loads(response.content)
 
-def scrape_article(source: str, link: str):
-    response = requests.get(config.SCRAPER_ARTICLE_URL + f"?source={source}&url={link}")
+def scrape_article(url: str):
+    response = requests.get(config.SCRAPER_ARTICLE_URL + f"?&url={url}")
     content = json.loads(response.content)
     if response.status_code != 200:
         pretty_printed_exception = json.dumps(content, indent=4)
-        raise Exception(f"Scraping article from {link} returned status code {response.status_code}: \n{pretty_printed_exception}")
+        raise Exception(f"Scraping article from {url} returned status code {response.status_code}: \n{pretty_printed_exception}")
     return content
