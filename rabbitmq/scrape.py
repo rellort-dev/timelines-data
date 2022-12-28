@@ -10,7 +10,7 @@ import config
 from scrape import get_sources, scrape_article, scrape_links
 
 
-def log_results(source: str, num_new_articles: int, num_failures: int):
+def log_results(source: str, num_new_articles: int, num_failures: int) -> None:
     if num_new_articles < 0 or num_failures < 0:
         raise ValueError("num_new_articles and num_failures cannot be smaller than 0")
     if num_failures > num_new_articles:
