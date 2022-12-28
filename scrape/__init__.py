@@ -8,7 +8,7 @@ from meilisearch import Client
 UNIX_TIMESTAMP_MIN_VALUE = 0
 
 def get_sources() -> list[str]:
-    return json.loads(requests.get(config.SCRAPER_URL + "/sources").content)
+    return json.loads(requests.get(config.SCRAPER_SOURCES_URL).content)
 
 def is_duplicate(article: Article, client: Client) -> bool:
     result = client.index("articles").search("", {
@@ -29,13 +29,11 @@ def get_latest_published_time(source: str, client: Client):
         return UNIX_TIMESTAMP_MIN_VALUE
     
 def scrape_links(source: str, offset: int) -> list[str]:
-    response = requests.get(config.SCRAPER_URL + f"/links?source={source}&offset={offset}")
-    if response.status_code != 200:
-        raise Exception(f"Scraping links from {source} returned status code {response.status_code}")
+    response = requests.get(config.SCRAPER_LINKS_URL + f"?source={source}&offset={offset}")
     return json.loads(response.content)
 
 def scrape_article(source: str, link: str):
-    response = requests.get(config.SCRAPER_URL + f"/article?source={source}&url={link}")
+    response = requests.get(config.SCRAPER_ARTICLE_URL + f"?source={source}&url={link}")
     content = json.loads(response.content)
     if response.status_code != 200:
         pretty_printed_exception = json.dumps(content, indent=4)
