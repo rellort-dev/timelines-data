@@ -16,7 +16,7 @@ def is_duplicate(article: Article, client: Client) -> bool:
     })
     return result['estimatedTotalHits'] > 0
 
-def get_latest_published_time(source: str, client: Client):
+def get_latest_published_time(source: str, client: Client) -> int:
     result = client.index("articles").search("", {
         "filter": [f"source = '{source}'"],
         "sort": [
@@ -30,6 +30,7 @@ def get_latest_published_time(source: str, client: Client):
     
 def scrape_links(source: str, offset: int) -> list[str]:
     response = requests.get(config.SCRAPER_LINKS_URL + f"?source={source}&offset={offset}")
+    response.raise_for_status()
     return json.loads(response.content)
 
 def scrape_article(source: str, link: str):
