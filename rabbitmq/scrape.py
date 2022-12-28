@@ -11,7 +11,12 @@ import config
 from scrape import get_sources, scrape_article, scrape_links, is_duplicate, get_latest_published_time
 
 
-def log_results(source, num_new_articles, num_failures):
+def log_results(source: str, num_new_articles: int, num_failures: int):
+    if num_new_articles < 0 or num_failures < 0:
+        raise ValueError("num_new_articles and num_failures cannot be smaller than 0")
+    if num_failures > num_new_articles:
+        raise ValueError("num_failures cannot be larger than num_new_articles")
+    
     logging_prefix = config.get_logging_prefix("scrape", source)
     num_successes = num_new_articles - num_failures
 
