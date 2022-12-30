@@ -50,13 +50,13 @@ def main(source):
                        routing_key=config.RABBITMQ_EMBEDDER_BINDING_KEY)
 
     num_failures = 0
-    logging_prefix = f"[scrape.py {source}|{datetime.now()}]"
 
     links = scrape_links(source)
     for link in links:
         try:
             article = scrape_article(link)
         except Exception as e:
+            logging_prefix = config.get_logging_prefix("scrape", source)
             print(logging_prefix + " " + str(e))
             num_failures += 1
             continue
