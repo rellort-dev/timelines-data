@@ -3,8 +3,9 @@ import functools
 import re
 import spacy
 from embed.config import config
+from embed.models import Article
 
-# Prevents the model from being loaded from importing the module
+# Prevents the model from being loaded when just importing the module
 @functools.cache
 def get_nlp():
     return spacy.load('en_core_web_lg', 
@@ -53,7 +54,7 @@ def embed_text(text) -> list[float]:
     embeddings = list(embeddings.astype(float))
     return embeddings
 
-def is_problematic_article(article):
+def is_problematic_article(article: Article) -> bool:
     if "title" not in article:
         return True
     return article["title"].startswith(tuple(config.ARTICLES_TO_REMOVE))
