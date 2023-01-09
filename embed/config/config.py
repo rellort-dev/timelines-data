@@ -15,6 +15,13 @@ ARTICLES_TO_REMOVE = (
     'Your Friday Briefing',
     'Your Saturday Briefing',
     'Your Sunday Briefing',
+    'Your Monday Evening Briefing',  # NYTimes
+    'Your Tuesday Evening Briefing',
+    'Your Wednesday Evening Briefing',
+    'Your Thursday Evening Briefing',
+    'Your Friday Evening Briefing',
+    'Your Saturday Evening Briefing',
+    'Your Sunday Evening Briefing',
     "AP Top News",  # AP News
 )
 
