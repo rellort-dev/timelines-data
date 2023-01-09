@@ -8,6 +8,13 @@ ARTICLES_TO_REMOVE = (
     'Russia-Ukraine war: List of key events',  # Al Jazeera
     'Russia-Ukraine war: What happened today',  # NPR
     'Russia-Ukraine war: A weekly recap and look ahead',  # NPR
+    'Your Monday Briefing',  # NYTimes
+    'Your Tuesday Briefing',
+    'Your Wednesday Briefing',
+    'Your Thursday Briefing',
+    'Your Friday Briefing',
+    'Your Saturday Briefing',
+    'Your Sunday Briefing',
 )
 
 # Ref: https://github.com/dipanjanS/text-analytics-with-python/blob/master/New-Second-Edition/Ch05%20-%20Text%20Classification/contractions.py
