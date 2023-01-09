@@ -15,6 +15,7 @@ ARTICLES_TO_REMOVE = (
     'Your Friday Briefing',
     'Your Saturday Briefing',
     'Your Sunday Briefing',
+    "AP Top News",  # AP News
 )
 
 # Ref: https://github.com/dipanjanS/text-analytics-with-python/blob/master/New-Second-Edition/Ch05%20-%20Text%20Classification/contractions.py
