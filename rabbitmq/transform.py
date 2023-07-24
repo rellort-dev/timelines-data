@@ -5,7 +5,7 @@ import sentry_sdk
 import uuid
 
 import config
-from embed import embed_text, is_problematic_article, process_text_for_nlp
+from transform import embed_article, is_problematic_article, process_text_for_nlp
 
 def callback(ch, method, properties, body):
     article = json.loads(body)
@@ -13,23 +13,22 @@ def callback(ch, method, properties, body):
     if is_problematic_article(article):
         return
 
-    article["text"] = article["title"] + " " + article["description"] + " " + article["content"]
-    article["text"] = process_text_for_nlp(article["text"])
-    article["embeddings"] = embed_text(article["text"])
-    del article["text"]
+    for text_col in ["title", "description", "content"]:
+        article[text_col] = process_text_for_nlp(article[text_col])
+    article["embeddings"] = embed_article(article)
 
     article["uuid"] = str(uuid.uuid4())
 
     ch.basic_publish(
         exchange=config.RABBITMQ_EXCHANGE_NAME,
         routing_key=config.RABBITMQ_STORER_BINDING_KEY, 
-        body=json.dumps(article),
+        body=json.dumps(article, default=str),
         properties=pika.BasicProperties(
             delivery_mode=pika.spec.PERSISTENT_DELIVERY_MODE
         )
     )
 
-    logging_prefix = config.get_logging_prefix("embed", None)
+    logging_prefix = config.get_logging_prefix("transform", None)
     print(f"{logging_prefix} Article embedded: {article['url']}")
     
 def main():
@@ -44,14 +43,14 @@ def main():
     channel = connection.channel()
 
     channel.exchange_declare(exchange=config.RABBITMQ_EXCHANGE_NAME, exchange_type="direct")
-    channel.queue_declare(queue=config.RABBITMQ_EMBEDDER_QUEUE_NAME, durable=True)
+    channel.queue_declare(queue=config.RABBITMQ_TRANSFORM_QUEUE_NAME, durable=True)
     channel.queue_bind(exchange=config.RABBITMQ_EXCHANGE_NAME, 
-                       queue=config.RABBITMQ_EMBEDDER_QUEUE_NAME, 
-                       routing_key=config.RABBITMQ_EMBEDDER_BINDING_KEY)
+                       queue=config.RABBITMQ_TRANSFORM_QUEUE_NAME, 
+                       routing_key=config.RABBITMQ_TRANSFORMER_BINDING_KEY)
     
-    print("Ready to embed articles")
+    print("Ready to transform articles")
     channel.basic_consume(
-        queue=config.RABBITMQ_EMBEDDER_QUEUE_NAME, on_message_callback=callback, auto_ack=True
+        queue=config.RABBITMQ_TRANSFORM_QUEUE_NAME, on_message_callback=callback, auto_ack=True
     )
     channel.start_consuming()
 

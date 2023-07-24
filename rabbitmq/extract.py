@@ -7,7 +7,7 @@ from datetime import datetime
 from dateutil import parser
 
 import config
-from scrape import get_sources, scrape_article, scrape_links
+from extract import get_sources, scrape_article, scrape_links
 
 
 def log_results(source: str, num_new_articles: int, num_failures: int) -> None:
@@ -16,7 +16,7 @@ def log_results(source: str, num_new_articles: int, num_failures: int) -> None:
     if num_failures > num_new_articles:
         raise ValueError("num_failures cannot be larger than num_new_articles")
     
-    logging_prefix = config.get_logging_prefix("scrape", source)
+    logging_prefix = config.get_logging_prefix("extract", source)
     num_successes = num_new_articles - num_failures
 
     print(
@@ -32,9 +32,9 @@ def main(source):
     
     supported_sources = get_sources()
     if source not in supported_sources:
-        logging_prefix = config.get_logging_prefix("scrape", source)
+        logging_prefix = config.get_logging_prefix("extract", source)
         supported_sources_str = ", ".join(supported_sources)
-        raise Exception(
+        raise ValueError(
             f"{logging_prefix} An incorrect source was provided. "
             + f"Supported sources: {supported_sources_str}"
         )
@@ -44,10 +44,10 @@ def main(source):
     )
     channel = connection.channel()
     channel.exchange_declare(exchange=config.RABBITMQ_EXCHANGE_NAME, exchange_type="direct")
-    channel.queue_declare(queue=config.RABBITMQ_EMBEDDER_QUEUE_NAME, durable=True)
+    channel.queue_declare(queue=config.RABBITMQ_TRANSFORM_QUEUE_NAME, durable=True)
     channel.queue_bind(exchange=config.RABBITMQ_EXCHANGE_NAME, 
-                       queue=config.RABBITMQ_EMBEDDER_QUEUE_NAME, 
-                       routing_key=config.RABBITMQ_EMBEDDER_BINDING_KEY)
+                       queue=config.RABBITMQ_TRANSFORM_QUEUE_NAME, 
+                       routing_key=config.RABBITMQ_TRANSFORMER_BINDING_KEY)
 
     num_failures = 0
 
@@ -56,7 +56,7 @@ def main(source):
         try:
             article = scrape_article(link)
         except Exception as e:
-            logging_prefix = config.get_logging_prefix("scrape", source)
+            logging_prefix = config.get_logging_prefix("extract", source)
             print(logging_prefix + " " + str(e))
             num_failures += 1
             continue
@@ -65,10 +65,10 @@ def main(source):
         unix_timestamp = int(parser.parse(iso_time).timestamp())
         article["publishedTime"] = unix_timestamp
         article["source"] = source
-        
+
         channel.basic_publish(
             exchange=config.RABBITMQ_EXCHANGE_NAME, 
-            routing_key=config.RABBITMQ_EMBEDDER_BINDING_KEY, 
+            routing_key=config.RABBITMQ_TRANSFORMER_BINDING_KEY, 
             body=json.dumps(article),
             properties=pika.BasicProperties(
                 delivery_mode=pika.spec.PERSISTENT_DELIVERY_MODE
@@ -84,4 +84,4 @@ if __name__ == "__main__":
         source = sys.argv[1]
         main(source)
     else:
-        raise Exception("Usage: python -m rabbitmq.scrape <source>")
+        raise Exception("Usage: python -m rabbitmq.extract <source>")

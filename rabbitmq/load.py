@@ -5,13 +5,13 @@ import sentry_sdk
 from meilisearch import Client
 
 import config
-from scrape import is_duplicate
+from extract import is_duplicate
 
 def callback(ch, method, properties, body):
     client = Client(config.MEILISEARCH_URL, config.MEILISEARCH_KEY)
 
     article = json.loads(body)
-    logging_prefix = config.get_logging_prefix("store_to_db", None)
+    logging_prefix = config.get_logging_prefix("load", None)
     if is_duplicate(article, client):
         print(f"{logging_prefix} Duplicate detected: {article['url']}")
         return
@@ -32,15 +32,15 @@ def main():
     channel = connection.channel()
 
     channel.exchange_declare(exchange=config.RABBITMQ_EXCHANGE_NAME, exchange_type="direct")
-    channel.queue_declare(queue=config.RABBITMQ_STORER_QUEUE_NAME, durable=True)
+    channel.queue_declare(queue=config.RABBITMQ_LOAD_QUEUE_NAME, durable=True)
     channel.queue_bind(exchange=config.RABBITMQ_EXCHANGE_NAME, 
-                       queue=config.RABBITMQ_STORER_QUEUE_NAME, 
+                       queue=config.RABBITMQ_LOAD_QUEUE_NAME, 
                        routing_key=config.RABBITMQ_STORER_BINDING_KEY)
     
     channel.basic_consume(
-        queue=config.RABBITMQ_STORER_QUEUE_NAME, on_message_callback=callback, auto_ack=True
+        queue=config.RABBITMQ_LOAD_QUEUE_NAME, on_message_callback=callback, auto_ack=True
     )
-    print("Ready to store articles")
+    print(f"Ready to store articles to {config.MEILISEARCH_URL}")
     channel.start_consuming()
 
 if __name__ == "__main__":

@@ -26,5 +26,5 @@ ARTICLES_TO_REMOVE = (
 )
 
 # Ref: https://github.com/dipanjanS/text-analytics-with-python/blob/master/New-Second-Edition/Ch05%20-%20Text%20Classification/contractions.py
-with open('embed/config/contractions.json', 'r') as f:
+with open('transform/config/contractions.json', 'r') as f:
     CONTRACTION_MAP = json.loads(f.read())

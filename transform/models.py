@@ -14,8 +14,8 @@ class Article(BaseModel):
 class Articles(BaseModel):
     articles: list[Article]
 
-class ProcessedArticle(Article):
+class TransformedArticle(Article):
     embeddings: list[float]
 
-class ProcessedArticles(BaseModel):
-    articles: list[ProcessedArticle]
+class TransformedArticles(BaseModel):
+    articles: list[TransformedArticle]

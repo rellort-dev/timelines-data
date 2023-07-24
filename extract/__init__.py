@@ -4,7 +4,7 @@ import json
 import requests
 from meilisearch import Client
 
-from embed.models import Article
+from transform.models import Article
 
 def get_sources() -> list[str]:
     return json.loads(requests.get(config.SCRAPER_SOURCES_URL).content)
