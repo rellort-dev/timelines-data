@@ -42,7 +42,7 @@ def embed_article(article: dict) -> list[float]:
     torch.cuda.empty_cache()
     gc.collect()
 
-    return list(embeddings[0])
+    return embeddings[0].tolist()
 
 
 def is_problematic_article(article: Article) -> bool:
